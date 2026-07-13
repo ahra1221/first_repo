@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" class="scroll-smooth">
+<html lang="ko" class="scroll-smooth h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,8 +16,9 @@
             theme: {
                 extend: {
                     colors: {
-                        // 사용자 지정 메인 초록색 단 하나만 사용하도록 설정
-                        mainGreen: '#599468'
+                        mainGreen: '#599468',
+                        mainGreenDark: '#457852',
+                        mainGreenLight: '#eef6f0'
                     },
                     fontFamily: {
                         sans: ['Pretendard', 'Inter', 'sans-serif'],
@@ -25,6 +26,7 @@
                     animation: {
                         'bounce-slow': 'bounce 3s infinite',
                         'pulse-gentle': 'pulse 2.5s infinite',
+                        'spin-slow': 'spin 8s linear infinite',
                     }
                 }
             }
@@ -35,7 +37,7 @@
         body {
             font-family: 'Pretendard', sans-serif;
             background-color: #ffffff;
-            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s;
         }
         /* Custom scrollbar for premium forest aesthetic */
         ::-webkit-scrollbar {
@@ -52,281 +54,402 @@
             background: #487b55;
         }
         
-        /* Interactive wave background when Tension mode active (using exactly #599468 with opacity) */
+        /* Interactive wave background when Tension mode active */
         .tension-wave {
             background-image: radial-gradient(circle, rgba(89, 148, 104, 0.08) 1.5px, transparent 1.5px);
             background-size: 24px 24px;
         }
+
+        /* MPA Page transition effects */
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+        }
+        /* FIXED: Removed display: block; from active state to prevent overriding the flex layouts */
+        .page.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
-<body class="text-stone-800 selection:bg-stone-100 antialiased overflow-x-hidden">
+<body class="text-stone-800 selection:bg-stone-100 antialiased overflow-x-hidden flex flex-col min-h-screen">
 
     <nav class="fixed top-0 left-0 w-full z-50 backdrop-blur-md bg-white/90 border-b border-stone-100 transition-all duration-300">
         <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <a href="#" class="text-lg font-bold tracking-wider text-stone-900 flex items-center gap-2">
+            <a href="#/home" class="text-lg font-bold tracking-wider text-stone-900 flex items-center gap-2">
                 <span id="nav-badge" class="w-8 h-8 rounded-full bg-mainGreen text-white flex items-center justify-center text-sm font-semibold shadow-sm transition-all duration-500">아라</span>
                 <span id="nav-logo-text" class="transition-all duration-500 font-extrabold text-stone-900">KO ARA</span>
             </a>
-            <!-- 정돈된 메뉴 네비게이션 순서 (소개 -> 좋아하는 것 -> 개발자 아라) -->
-            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600">
-                <a href="#about" class="hover:text-mainGreen transition-colors">소개</a>
-                <a href="#archive" class="hover:text-mainGreen transition-colors">좋아하는 것</a>
-                <a href="#developer" class="hover:text-mainGreen transition-colors">개발자 아라</a>
+            
+            <!-- MPA-style Header Navigation Links -->
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-stone-600" id="nav-links">
+                <a href="#/home" data-route="home" class="nav-item hover:text-mainGreen transition-colors py-2 border-b-2 border-transparent">홈</a>
+                <a href="#/about" data-route="about" class="nav-item hover:text-mainGreen transition-colors py-2 border-b-2 border-transparent">소개</a>
+                <a href="#/favorites" data-route="favorites" class="nav-item hover:text-mainGreen transition-colors py-2 border-b-2 border-transparent">좋아하는 것</a>
+                <a href="#/developer" data-route="developer" class="nav-item hover:text-mainGreen transition-colors py-2 border-b-2 border-transparent">개발자</a>
             </div>
             
-            <!-- Tension Mode Toggle Switch -->
-            <button id="tension-toggle" class="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 active:scale-95 text-stone-700 font-semibold text-xs rounded-full border border-stone-200 transition-all duration-300 shadow-sm" aria-label="Tension Mode Switch">
-                <i id="toggle-icon" class="fa-solid fa-face-smile text-mainGreen text-sm animate-pulse"></i>
-                <span id="toggle-label-text">스위치 켜기</span>
-            </button>
-        </div>
-    </nav>
+            <div class="flex items-center gap-3">
+                <!-- Tension Mode Toggle Switch -->
+                <button id="tension-toggle" class="flex items-center gap-2 px-4 py-2 bg-stone-50 hover:bg-stone-100 active:scale-95 text-stone-700 font-semibold text-xs rounded-full border border-stone-200 transition-all duration-300 shadow-sm" aria-label="Tension Mode Switch">
+                    <i id="toggle-icon" class="fa-solid fa-face-smile text-mainGreen text-sm animate-pulse"></i>
+                    <span id="toggle-label-text">스위치 켜기</span>
+                </button>
 
-    <section class="min-h-screen flex flex-col justify-center items-center relative pt-16 px-6 overflow-hidden bg-white" id="hero-sec">
-        <!-- Floating decorative circles (using mainGreen with light opacity) -->
-        <div class="absolute top-1/4 left-10 w-24 h-24 bg-mainGreen/5 rounded-full filter blur-xl animate-pulse-gentle"></div>
-        <div class="absolute bottom-1/4 right-10 w-32 h-32 bg-mainGreen/10 rounded-full filter blur-xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
-        
-        <div class="max-w-4xl text-center z-10 transition-all duration-700 transform" id="hero-content">
-            <!-- Tension State Badge -->
-            <span id="hero-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium bg-stone-50 text-stone-600 border border-stone-100 mb-8 transition-all duration-500">
-                <span id="badge-dot" class="w-2 h-2 rounded-full bg-mainGreen animate-ping"></span>
-                <span id="badge-text">차분하고 은은한 낯가림 모드 작동 중</span>
-            </span>
-            
-            <!-- Refined Simple Hero Title -->
-            <h1 id="hero-title" class="text-5xl sm:text-7xl font-extrabold tracking-tight leading-none mb-6 text-stone-900 transition-all duration-500">
-                I AM <span class="text-mainGreen border-b-4 border-stone-100 pb-1 animate-pulse" id="hero-highlight">고아라</span>
-            </h1>
-            
-            <!-- Subtle elegant subtitle with lighter font weight and generous spacing -->
-            <p id="hero-subtitle" class="text-stone-500 text-lg sm:text-xl font-light tracking-wide mb-12 max-w-lg mx-auto transition-all duration-500">
-                천천히 알아갈수록 더 깊어지는 사람
-            </p>
-            
-            <!-- Interactive Play Trigger buttons -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="#about" class="px-8 py-4 rounded-full bg-mainGreen hover:opacity-90 text-white font-semibold shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
-                    알아보기 <i class="fa-solid fa-arrow-down text-xs"></i>
-                </a>
-                <button onclick="triggerTensionEffect()" class="px-8 py-4 rounded-full bg-white hover:bg-stone-50 text-stone-700 font-semibold border border-stone-200 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2 shadow-sm">
-                    <span id="hero-tension-btn-txt">스위치 켜기</span> <i class="fa-solid fa-bolt text-mainGreen animate-bounce"></i>
+                <!-- Mobile menu toggle button -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-stone-700 hover:text-mainGreen" aria-label="Open Mobile Menu">
+                    <i class="fa-solid fa-bars text-lg"></i>
                 </button>
             </div>
         </div>
+    </nav>
 
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce-slow text-stone-400 text-sm flex flex-col items-center">
-            <span class="mb-2 text-xs font-medium tracking-widest text-stone-400 uppercase">Scroll Down</span>
-            <i class="fa-solid fa-chevron-down"></i>
+    <div id="mobile-drawer" class="fixed inset-y-0 right-0 w-64 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out md:hidden flex flex-col border-l border-stone-100">
+        <div class="p-6 flex items-center justify-between border-b border-stone-100">
+            <span class="font-bold text-stone-900">전체 메뉴</span>
+            <button id="close-drawer-btn" class="p-2 text-stone-500 hover:text-stone-900">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
         </div>
-    </section>
-
-    <section id="about" class="py-24 px-6 max-w-5xl mx-auto scroll-mt-10">
-        <div class="text-center max-w-xl mx-auto mb-16">
-            <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">About Ara</span>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug">
-                저에 대해 소개해 드릴게요
-            </h2>
+        <div class="flex flex-col p-6 gap-6 text-base font-semibold text-stone-700">
+            <a href="#/home" class="mobile-nav-item flex items-center gap-3 hover:text-mainGreen transition-colors"><i class="fa-solid fa-house text-sm"></i> 홈</a>
+            <a href="#/about" class="mobile-nav-item flex items-center gap-3 hover:text-mainGreen transition-colors"><i class="fa-solid fa-user text-sm"></i> 소개</a>
+            <a href="#/favorites" class="mobile-nav-item flex items-center gap-3 hover:text-mainGreen transition-colors"><i class="fa-solid fa-heart text-sm"></i> 좋아하는 것</a>
+            <a href="#/developer" class="mobile-nav-item flex items-center gap-3 hover:text-mainGreen transition-colors"><i class="fa-solid fa-code text-sm"></i> 개발자</a>
         </div>
+        <div class="mt-auto p-6 border-t border-stone-100 bg-stone-50 text-center">
+            <p class="text-xs text-stone-400">© 2026 KO ARA</p>
+        </div>
+    </div>
+    <!-- Drawer backdrop Overlay -->
+    <div id="drawer-overlay" class="fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-40 hidden transition-opacity duration-300 opacity-0"></div>
 
-        <!-- 4 Simplified Grid Story Boxes (Requested layout without Profile Card) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Main Content Pages Outer Wrapper -->
+    <main class="flex-grow pt-16">
+
+        <!-- FIXED: Ensures flex, flex-col, justify-center, items-center alignment works perfectly without block override -->
+        <section id="page-home" class="page min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center relative px-6 overflow-hidden bg-white">
+            <!-- Floating decorative circles -->
+            <div class="absolute top-1/4 left-10 w-24 h-24 bg-mainGreen/5 rounded-full filter blur-xl animate-pulse-gentle"></div>
+            <div class="absolute bottom-1/4 right-10 w-32 h-32 bg-mainGreen/10 rounded-full filter blur-xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
             
-            <!-- Box 1: 2001년생 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-cake-candles"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">2001년생</h3>
-                    </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        안타깝게 월드컵 베이비를 놓친
-                    </p>
-                </div>
-            </div>
-
-            <!-- Box 2: 소프트웨어융합전공 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-code"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">소프트웨어융합전공</h3>
-                    </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        컴공이랑 어떤 차이점이 있는지 몰라서 컴공이라고 소개하지만 사실은 소융입니다.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Box 3: ESFP -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-face-laugh-beam"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">ESFP</h3>
-                    </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        연예인 MBTI라고 하는데 낯을 가려서 전혀 아닌거 같습니다. 그 이외의 특징은 대부분 맞는듯합니다.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Box 4: 할리갈리 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-bell"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">보드게임</h3>
-                    </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        단순한 게임 위주로 잘합니다. 루미큐브 할리갈리 다빈치코드 레츠고!
-                    </p>
-                </div>
-            </div>
-
-        </div>
-    </section>
-
-    <section id="archive" class="py-24 px-6 max-w-6xl mx-auto border-t border-stone-100 scroll-mt-10">
-        <div class="text-center max-w-xl mx-auto mb-16">
-            <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">Ara's Favorites</span>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900">좋아하는 것들을 소개합니다</h2>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            
-            <!-- Archive Element 1: Squash Racket Interactive Score Game -->
-            <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300">
-                <div>
-                    <div class="flex items-center justify-between mb-6">
-                        <span class="text-xs font-bold text-white px-3 py-1 bg-mainGreen rounded-full">🏸 좋아하는 운동</span>
-                    </div>
-                    <h3 class="text-xl font-bold text-stone-900 mb-2">박진감 넘치는 스쿼시</h3>
-                    <p class="text-stone-500 text-sm leading-relaxed mb-6 font-light">
-                        작은 방 안에서 강하게 튕겨 나가는 스쿼시 볼에 체력을 집중!
-                    </p>
-                </div>
+            <div class="max-w-4xl text-center z-10 transition-all duration-700 transform mx-auto" id="hero-content">
+                <!-- Tension State Badge -->
+                <span id="hero-badge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium bg-stone-50 text-stone-600 border border-stone-100 mb-8 transition-all duration-500">
+                    <span id="badge-dot" class="w-2 h-2 rounded-full bg-mainGreen animate-ping"></span>
+                    <span id="badge-text">차분하고 은은한 낯가림 모드 작동 중</span>
+                </span>
                 
-                <!-- Interactive Squash Game Component -->
-                <div class="bg-stone-900 rounded-2xl p-6 relative h-48 flex items-center justify-center overflow-hidden border border-stone-800 shadow-inner group">
-                    <div class="absolute inset-x-0 top-0 h-2 bg-mainGreen"></div> <!-- Squash Out Line -->
-                    <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-full border-l border-dashed border-stone-700/60"></div>
-                    
-                    <!-- Ball Element -->
-                    <div id="squash-ball" class="w-4 h-4 rounded-full bg-white absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 shadow-[0_0_10px_#ffffff]"></div>
-                    
-                    <!-- Text Indicator Overlay -->
-                    <div id="squash-score-overlay" class="absolute inset-0 bg-stone-950/90 flex flex-col items-center justify-center gap-2 text-stone-300 opacity-100 transition-opacity duration-300 cursor-pointer text-center px-4">
-                        <p class="text-xs font-semibold tracking-wider text-stone-400 uppercase">Interactive Squash Ball</p>
-                        <p class="text-sm font-light">화면을 탭하여 스매싱 랠리를 시작하세요!</p>
-                        <p class="text-[10px] text-stone-500 font-mono">최고 스피드: <span id="squash-max-speed">0</span> km/h</p>
-                    </div>
-
-                    <!-- Live Rallies display -->
-                    <div id="squash-hud" class="absolute top-4 right-4 text-right hidden text-stone-300 text-xs font-mono space-y-1">
-                        <div>Speed: <span id="current-speed" class="text-white font-bold">120</span> km/h</div>
-                        <div>Rallies: <span id="rally-count" class="text-stone-300 font-bold">0</span></div>
-                    </div>
-                    
-                    <button onclick="hitSquashBall()" class="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-white hover:bg-stone-100 active:scale-95 text-stone-900 font-extrabold text-xs rounded-full shadow hidden transition-transform" id="hit-btn">
-                        스매싱 치기! <i class="fa-solid fa-bolt text-mainGreen"></i>
+                <!-- Refined Simple Hero Title -->
+                <h1 id="hero-title" class="text-5xl sm:text-7xl font-extrabold tracking-tight leading-none mb-6 text-stone-900 transition-all duration-500">
+                    I AM <span class="text-mainGreen border-b-4 border-stone-100 pb-1 animate-pulse" id="hero-highlight">고아라</span>
+                </h1>
+                
+                <!-- Subtle elegant subtitle -->
+                <p id="hero-subtitle" class="text-stone-500 text-lg sm:text-xl font-light tracking-wide mb-12 max-w-lg mx-auto transition-all duration-500">
+                    천천히 알아갈수록 더 깊어지는 사람
+                </p>
+                
+                <!-- Interactive Play Trigger buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="#/about" class="px-8 py-4 rounded-full bg-mainGreen hover:bg-mainGreenDark text-white font-semibold shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2">
+                        시작하기 <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                    <button onclick="triggerTensionEffect()" class="px-8 py-4 rounded-full bg-white hover:bg-stone-50 text-stone-700 font-semibold border border-stone-200 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2 shadow-sm">
+                        <span id="hero-tension-btn-txt">스위치 켜기</span> <i class="fa-solid fa-bolt text-mainGreen animate-bounce"></i>
                     </button>
                 </div>
             </div>
 
-            <!-- Archive Element 2: Sashimi Wheel/Picker -->
-            <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300">
-                <div>
-                    <div class="flex items-center justify-between mb-6">
-                        <span class="text-xs font-bold text-white px-3 py-1 bg-mainGreen rounded-full">🐟 좋아하는 음식</span>
+            <!-- Page indicators matching MPA flow -->
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce-slow text-stone-400 text-sm flex flex-col items-center">
+                <span class="mb-2 text-[10px] font-bold tracking-widest text-stone-400 uppercase">Explore Portfolio</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+        </section>
+
+        <section id="page-about" class="page py-16 px-6 max-w-5xl mx-auto">
+            <div class="text-center max-w-xl mx-auto mb-12">
+                <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">About Ara</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug">
+                    저에 대해 소개해 드릴게요
+                </h2>
+                <p class="text-stone-500 text-sm mt-2 font-light">고아라의 기본 프로필과 일상 속 소소한 아이덴티티들</p>
+            </div>
+
+            <!-- 4 Simplified Grid Story Boxes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                <!-- Box 1: 2001년생 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-cake-candles"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">2001년생</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            안타깝게 월드컵 베이비를 놓친 2001년생입니다. 
+                        </p>
                     </div>
-                    <h3 class="text-xl font-bold text-stone-900 mb-2">오늘 밤 추천하는 미식 메뉴</h3>
-                    <p class="text-stone-500 text-sm leading-relaxed mb-6 font-light">
-                        지극히 개인적인 회 메뉴 랜덤 추천해드립니다.
-                    </p>
+                </div>
+
+                <!-- Box 2: 소프트웨어융합전공 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-code"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">소프트웨어융합전공</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            컴공이랑 큰 차이가 없어서 평소에는 컴공이라고 하지만 사실은 소융입니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Box 3: ESFP -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-face-laugh-beam"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">ESFP (자유로운 영혼의 연예인)</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            주변에선 연예인 MBTI라고 하는데, 처음에는 낯을 가리는 성격이라 조금 다른 것 같습니다. 다만 친해지면 ESFP 성격이 맞는거 같아요ㅎ
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Box 4: 게임 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bell"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">순간 집중의 보드게임</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            단순한 게임 위주로 즐겨하는 편입니다. 보드게임은 루미큐브 다빈치코드 할리갈리 잘합니다!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Interactive Sub-feature: Ara's Vibe Matcher -->
+            <div class="bg-stone-50 border border-stone-200/60 rounded-3xl p-8 max-w-3xl mx-auto text-center mt-12 transition-all" id="vibe-card-container">
+                <span class="px-3 py-1 bg-mainGreen/10 text-mainGreen text-[11px] font-bold rounded-full uppercase">Interactive Mini-Test</span>
+                <h3 class="text-xl font-bold text-stone-900 mt-3 mb-2">아라님과의 케미스트리(Chemistry) 측정기</h3>
+                <p class="text-stone-500 text-xs max-w-md mx-auto mb-6">당신의 선호 항목을 선택하여 고아라님과의 성향 매칭도를 분석해 보세요!</p>
+                
+                <div class="flex flex-wrap justify-center gap-3 mb-6" id="vibe-options">
+                    <button onclick="matchVibe('E')" class="px-4 py-2 rounded-full border border-stone-300 text-xs bg-white hover:border-mainGreen hover:text-mainGreen transition-all font-medium">활동적인 수다</button>
+                    <button onclick="matchVibe('I')" class="px-4 py-2 rounded-full border border-stone-300 text-xs bg-white hover:border-mainGreen hover:text-mainGreen transition-all font-medium">조용한 카페 수다</button>
+                    <button onclick="matchVibe('board')" class="px-4 py-2 rounded-full border border-stone-300 text-xs bg-white hover:border-mainGreen hover:text-mainGreen transition-all font-medium">손에 땀을 쥐는 할리갈리</button>
+                    <button onclick="matchVibe('sashimi')" class="px-4 py-2 rounded-full border border-stone-300 text-xs bg-white hover:border-mainGreen hover:text-mainGreen transition-all font-medium">기름진 연어 & 방어회</button>
                 </div>
                 
-                <!-- Interactive Sashimi Selector UI -->
-                <div class="bg-stone-50 border border-stone-100 rounded-2xl p-6 text-center">
-                    <div class="text-4xl mb-4 animate-pulse" id="sashimi-emoji">🍣</div>
-                    <h4 class="text-lg font-bold text-stone-900 mb-1" id="sashimi-name">모듬 숙성회</h4>
-                    <p class="text-stone-500 text-xs mb-4 min-h-[32px] font-light leading-relaxed" id="sashimi-desc">부드러운 숙성으로 감칠맛을 최대치로 끌어올려 입 안 가득 스며드는 맛</p>
+                <div id="vibe-result" class="text-sm font-semibold text-mainGreen h-6 transition-all"></div>
+            </div>
+        </section>
 
-                    <button onclick="pickRandomSashimi()" class="w-full py-3 bg-mainGreen hover:opacity-90 active:scale-[0.98] text-white text-xs font-semibold rounded-xl shadow transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-dice"></i> 오늘의 미식 메뉴 추천받기
-                    </button>
-                </div>
+        <section id="page-favorites" class="page py-16 px-6 max-w-6xl mx-auto">
+            <div class="text-center max-w-xl mx-auto mb-12">
+                <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">Ara's Favorites</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900">좋아하는 것들을 소개합니다</h2>
+                <p class="text-stone-500 text-sm mt-2 font-light">운동과 음식</p>
             </div>
 
-        </div>
-    </section>
-
-    <!-- '개발자로서는 어떨까?' section moved here (the last section of the content, right before the footer) -->
-    <section id="developer" class="py-24 px-6 max-w-5xl mx-auto border-t border-stone-100 scroll-mt-10">
-        <div class="text-center max-w-xl mx-auto mb-16">
-            <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">Developer Ara</span>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug">
-                개발자로서는 어떨까?
-            </h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Developer Point 1 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-brands fa-swift"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">iOS 개발 경험</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Archive Element 1: Squash Racket Interactive Score Game -->
+                <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-xs font-bold text-white px-3 py-1 bg-mainGreen rounded-full">🏸 좋아하는 운동</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-stone-900 mb-2">박진감 넘치는 스쿼시</h3>
+                        <p class="text-stone-500 text-sm leading-relaxed mb-6 font-light">
+                            사방이 막힌 박스 형태의 좁은 방 안에서 튕겨 나가는 스쿼시 볼에 온 신경과 에너지를 온전히 집중할 때 느껴지는 짜릿함!
+                        </p>
                     </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        iOS 개발자로 짧은 경력이 있어요.<br> Swift 언어를 기반으로 네이티브 앱을 안정적으로 개발해 본 실전 경험을 보유하고 있습니다.
-                    </p>
-                </div>
-            </div>
+                    
+                    <!-- Interactive Squash Game Component with Realistic Visual Court layout -->
+                    <div class="bg-stone-900 rounded-2xl p-6 relative h-60 flex flex-col items-center justify-between overflow-hidden border border-stone-800 shadow-inner group">
+                        <!-- Squash Out Lines (Squash Red Line Style transformed to mainGreen) -->
+                        <div class="absolute inset-x-0 top-0 h-2 bg-mainGreen"></div> 
+                        <div class="absolute inset-x-0 top-12 h-0.5 bg-mainGreen/50"></div> 
+                        <div class="absolute left-1/2 -translate-x-1/2 w-0.5 h-full border-l border-dashed border-stone-700/60"></div>
+                        
+                        <!-- 3D Perspective Lines -->
+                        <div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+                            <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                                <line x1="0" y1="240" x2="150" y2="50" stroke="#599468" stroke-width="1"/>
+                                <line x1="100%" y1="240" x2="65%" y2="50" stroke="#599468" stroke-width="1"/>
+                            </svg>
+                        </div>
 
-            <!-- Developer Point 2 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-users-rectangle"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">다양한 협업 자세</h3>
+                        <!-- Interactive Ball Element with Motion Trail Shadow -->
+                        <div id="squash-ball" class="w-4 h-4 rounded-full bg-white absolute left-8 top-1/2 -translate-y-1/2 transition-all duration-300 shadow-[0_0_12px_#ffffff] z-10"></div>
+                        
+                        <!-- Interactive Racket Visual -->
+                        <div id="squash-racket" class="absolute bottom-4 left-6 text-stone-400 text-2xl transition-all duration-100 transform -rotate-12 pointer-events-none z-10">
+                            <i class="fa-solid fa-table-tennis-paddle-ball text-mainGreen"></i>
+                        </div>
+
+                        <!-- Text Indicator Overlay -->
+                        <div id="squash-score-overlay" class="absolute inset-0 bg-stone-950/90 flex flex-col items-center justify-center gap-2 text-stone-300 opacity-100 transition-opacity duration-300 cursor-pointer text-center px-4 z-20">
+                            <p class="text-xs font-semibold tracking-wider text-mainGreen uppercase">Interactive Squash Court</p>
+                            <p class="text-sm font-light text-white">화면을 클릭하여 코트에 입장하세요!</p>
+                            <p class="text-[10px] text-stone-400">마우스 움직임으로 라켓을 제어하고 공을 맞춰보세요.</p>
+                            <p class="text-[10px] text-stone-500 font-mono mt-1">최고 속도: <span id="squash-max-speed">0</span> km/h</p>
+                        </div>
+
+                        <!-- Live Rallies display -->
+                        <div id="squash-hud" class="absolute top-4 right-4 text-right hidden text-stone-300 text-xs font-mono space-y-1 z-10">
+                            <div>속도: <span id="current-speed" class="text-white font-bold">120</span> km/h</div>
+                            <div>랠리 수: <span id="rally-count" class="text-mainGreen font-bold">0</span></div>
+                        </div>
+                        
+                        <div class="w-full flex justify-between items-center z-10 mt-auto">
+                            <span class="text-[10px] font-mono text-stone-500">COURT VIEW</span>
+                            <button onclick="hitSquashBall()" class="px-5 py-2 bg-white hover:bg-stone-100 active:scale-95 text-stone-900 font-extrabold text-xs rounded-full shadow hidden transition-transform flex items-center gap-1.5" id="hit-btn">
+                                스매시 타격 <i class="fa-solid fa-bolt text-mainGreen"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        다수의 프로젝트를 소화하며 리더와 팔로워 모두 수행한 경험이 있습니다.<br>특히 프로젝트 초반에는 분위기를 파악하고 중심을 잡아 주는 든든한 팔로워 성향을 발휘합니다.
-                    </p>
                 </div>
-            </div>
 
-            <!-- Developer Point 3 -->
-            <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center gap-4 mb-4">
-                        <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
-                            <i class="fa-solid fa-bolt-lightning"></i>
-                        </span>
-                        <h3 class="text-lg font-bold text-stone-900">책임감과 효율성</h3>
+                <!-- Archive Element 2: Sashimi Wheel/Picker -->
+                <div class="bg-white rounded-3xl p-8 border border-stone-100 shadow-sm flex flex-col justify-between hover:shadow-xl transition-all duration-300">
+                    <div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-xs font-bold text-white px-3 py-1 bg-mainGreen rounded-full">🐟 좋아하는 음식</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-stone-900 mb-2">오늘 밤 추천해드리는 회</h3>
+                        <p class="text-stone-500 text-sm leading-relaxed mb-6 font-light">
+                            단백하고 쫄깃하거나 고소하게 기름져 입 안에서 춤추는 프리미엄 생선회. 지극히 주관적인 회 추천해드립니다.
+                        </p>
                     </div>
-                    <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
-                        책임감이 확고하여 약속된 개발 일정을 미루거나 완수하지 못한 경험이 단 한 번도 없습니다.<br>불필요한 리소스를 아끼는 효율주의 성향이 고스란히 코드에 녹아듭니다.
-                    </p>
+                    
+                    <!-- Interactive Sashimi Selector UI -->
+                    <div class="bg-stone-50 border border-stone-100 rounded-2xl p-6 text-center transition-all duration-300 hover:border-mainGreen/20">
+                        <div class="text-5xl mb-4 inline-block transform transition-transform duration-500" id="sashimi-emoji">🍣</div>
+                        <h4 class="text-lg font-bold text-stone-900 mb-1" id="sashimi-name">모듬 숙성회</h4>
+                        <p class="text-stone-500 text-xs mb-4 min-h-[36px] font-light leading-relaxed max-w-sm mx-auto" id="sashimi-desc">부드러운 숙성으로 감칠맛을 최대치로 끌어올려 입 안 가득 스며드는 맛</p>
+
+                        <button onclick="pickRandomSashimi()" class="w-full py-3 bg-mainGreen hover:bg-mainGreenDark active:scale-[0.98] text-white text-xs font-semibold rounded-xl shadow transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-dice"></i> 아라의 최애 미식메뉴 추천받기
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <footer class="bg-stone-950 text-stone-400 py-16 px-6 border-t border-stone-800">
+        <section id="page-developer" class="page py-16 px-6 max-w-5xl mx-auto">
+            <div class="text-center max-w-xl mx-auto mb-12">
+                <span class="text-xs font-bold tracking-widest text-mainGreen uppercase bg-stone-50 border border-stone-200 px-3 py-1 rounded-md inline-block mb-4">Developer Ara</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-stone-900 leading-snug">
+                    개발자로서는 어떨까?
+                </h2>
+                <p class="text-stone-500 text-sm mt-2 font-light">정확하고 책임감 있는 개발자</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <!-- Developer Point 1 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-brands fa-swift"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">모바일 네이티브 경험</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            Android와 iOS 개발의 짧은 경력을 가지고 있어 보여지는 화면 ui에 꼼꼼하게 대응하는 편입니다. 또한 QA에 재능을 가지고 있다는 말을 많이 들었습니다ㅎㅎ 
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Developer Point 2 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-users-rectangle"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">협업 경험</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            학부시절부터 다수의 협업을 경험하며 원활한 개발 소통에 익숙합니다. 저는 초반에는 팔로워형에 가까운 편이나, 실제 개발에 들어간 이후에는 리더형의 모습도 보이는 성격인 것 같습니다.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Developer Point 3 -->
+                <div class="bg-white border-2 border-stone-100 p-8 rounded-3xl hover:border-mainGreen/30 hover:shadow-xl transition-all duration-500 group flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-4 mb-4">
+                            <span class="w-10 h-10 rounded-2xl bg-stone-50 text-mainGreen flex items-center justify-center text-md font-bold group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bolt-lightning"></i>
+                            </span>
+                            <h3 class="text-lg font-bold text-stone-900">책임감</h3>
+                        </div>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed font-light">
+                            주어진 임무와 일정 약속을 어긴 적은 한번도 없습니다. 또한 효율성을 중요하게 생각하기 때문에 제한 시간 내에 빠르고 정확하게 업무를 끝내는 것을 추구합니다!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Interactive Sub-feature: Live Terminal Console -->
+            <div class="bg-stone-950 rounded-3xl overflow-hidden shadow-2xl max-w-3xl mx-auto border border-stone-800">
+                <!-- Console Header -->
+                <div class="bg-stone-900/80 px-6 py-4 flex items-center justify-between border-b border-stone-800">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                        <span class="text-stone-400 font-mono text-xs ml-2 flex items-center gap-1"><i class="fa-brands fa-apple text-mainGreen"></i> ara_playgrounds.swift</span>
+                    </div>
+                    <span class="text-[10px] text-stone-500 font-mono">Terminal Simulator v1.2</span>
+                </div>
+                <!-- Console content -->
+                <div class="p-6 font-mono text-xs md:text-sm text-stone-300 space-y-4">
+                    <div class="flex gap-2">
+                        <span class="text-mainGreen font-bold">import</span>
+                        <span class="text-emerald-400">Foundation</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="text-mainGreen font-bold">import</span>
+                        <span class="text-emerald-400">AraDeveloperKit</span>
+                    </div>
+                    
+                    <div class="border-t border-stone-800/80 pt-4">
+                        <p class="text-stone-500">// 고아라 개발자 인스턴스를 조회해보세요.</p>
+                        <div class="flex flex-wrap items-center gap-2 mt-2">
+                            <button onclick="runSwiftCode('profile')" class="px-3 py-1 bg-stone-800 hover:bg-mainGreen hover:text-white rounded text-stone-300 font-medium transition-all">ara.printProfile()</button>
+                            <button onclick="runSwiftCode('motto')" class="px-3 py-1 bg-stone-800 hover:bg-mainGreen hover:text-white rounded text-stone-300 font-medium transition-all">ara.getDevMotto()</button>
+                            <button onclick="runSwiftCode('stack')" class="px-3 py-1 bg-stone-800 hover:bg-mainGreen hover:text-white rounded text-stone-300 font-medium transition-all">ara.stackCapability()</button>
+                        </div>
+                    </div>
+
+                    <!-- Live output screen -->
+                    <div class="bg-black/40 border border-stone-800 rounded-xl p-4 mt-4 min-h-[100px] flex items-center justify-center text-stone-400 font-mono" id="terminal-output">
+                        위 Swift 함수 중 하나를 클릭해 실시간 콘솔을 동작 시키세요.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-stone-950 text-stone-400 py-12 px-6 border-t border-stone-800 mt-auto">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
             <div class="space-y-3 text-center md:text-left">
                 <div class="flex items-center justify-center md:justify-start gap-2 text-white font-extrabold tracking-wider text-lg">
@@ -340,7 +463,7 @@
             </div>
 
             <!-- Decorative signature -->
-            <div class="flex items-center gap-4 text-xs font-mono text-stone-600">
+            <div class="flex flex-col items-center md:items-end gap-2 text-xs font-mono text-stone-600">
                 <span>© 2026 KO ARA. All rights reserved.</span>
             </div>
         </div>
@@ -353,24 +476,141 @@
     </div>
 
     <script>
+        // Global State
         let activeTensionMode = false;
         let squashRallies = 0;
         let maxSquashSpeed = 0;
+        let isCourtActivated = false;
+
+        // Simple Router Mapping
+        const routes = {
+            'home': 'page-home',
+            'about': 'page-about',
+            'favorites': 'page-favorites',
+            'developer': 'page-developer'
+        };
+
+        // Initialize Router
+        function handleRouting() {
+            // Get current path or default to #/home
+            let hash = window.location.hash || '#/home';
+            if (hash === '#') hash = '#/home';
+            
+            // Clean up hash to get path name (e.g. 'home', 'about')
+            const routeKey = hash.replace('#/', '').split('?')[0];
+            const targetPageId = routes[routeKey] || 'page-home';
+
+            // Hide all pages, remove active classes
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+                page.style.display = 'none';
+            });
+
+            // Show active page with correct layout preservation (flex for home, block for others)
+            const targetPage = document.getElementById(targetPageId);
+            if (targetPage) {
+                // FIXED: Detect if page element contains "flex" in its classes, then style appropriately
+                if (targetPage.classList.contains('flex')) {
+                    targetPage.style.display = 'flex';
+                } else {
+                    targetPage.style.display = 'block';
+                }
+                
+                // Trigger transition delay so opacity fade works beautifully
+                setTimeout(() => {
+                    targetPage.classList.add('active');
+                }, 50);
+            }
+
+            // Update Navigation active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if (item.getAttribute('data-route') === routeKey) {
+                    item.classList.add('text-mainGreen', 'border-mainGreen');
+                    item.classList.remove('text-stone-600', 'border-transparent');
+                } else {
+                    item.classList.remove('text-mainGreen', 'border-mainGreen');
+                    item.classList.add('text-stone-600', 'border-transparent');
+                }
+            });
+
+            // Scroll to top of window on page shift to simulate MPA
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+
+        // Event Listeners for Routing
+        window.addEventListener('hashchange', handleRouting);
         
+        // Window Load
         window.onload = function() {
+            // Apply routing on boot
+            handleRouting();
+            
+            // Initialize other dynamic systems
             initSashimi();
             
+            // Local Storage reading for Squash Game
+            const storedMax = localStorage.getItem('squash_max') || 0;
+            document.getElementById('squash-max-speed').innerText = storedMax;
+            maxSquashSpeed = parseInt(storedMax);
+
             // Squash field start trigger
             document.getElementById('squash-score-overlay').addEventListener('click', function() {
                 this.classList.add('opacity-0', 'pointer-events-none');
                 document.getElementById('squash-hud').classList.remove('hidden');
                 document.getElementById('hit-btn').classList.remove('hidden');
-                
-                const storedMax = localStorage.getItem('squash_max') || 0;
-                document.getElementById('squash-max-speed').innerText = storedMax;
-                maxSquashSpeed = parseInt(storedMax);
+                isCourtActivated = true;
+            });
+
+            // Mouse track squash racket helper
+            const squashArea = document.querySelector('#page-favorites .bg-stone-900');
+            squashArea.addEventListener('mousemove', function(e) {
+                if (!isCourtActivated) return;
+                const rect = squashArea.getBoundingClientRect();
+                const relativeX = e.clientX - rect.left;
+                const racket = document.getElementById('squash-racket');
+                // Constraint boundary racket movement
+                if (relativeX > 15 && relativeX < (rect.width - 45)) {
+                    racket.style.left = `${relativeX}px`;
+                }
+            });
+            
+            // Touch track squash racket helper for Mobile compatibility
+            squashArea.addEventListener('touchmove', function(e) {
+                if (!isCourtActivated) return;
+                const rect = squashArea.getBoundingClientRect();
+                const touch = e.touches[0];
+                const relativeX = touch.clientX - rect.left;
+                const racket = document.getElementById('squash-racket');
+                if (relativeX > 15 && relativeX < (rect.width - 45)) {
+                    racket.style.left = `${relativeX}px`;
+                }
             });
         }
+
+        // Custom mobile drawer systems
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeDrawerBtn = document.getElementById('close-drawer-btn');
+        const mobileDrawer = document.getElementById('mobile-drawer');
+        const drawerOverlay = document.getElementById('drawer-overlay');
+
+        function toggleDrawer(open) {
+            if (open) {
+                mobileDrawer.classList.remove('translate-x-full');
+                drawerOverlay.classList.remove('hidden');
+                setTimeout(() => drawerOverlay.classList.add('opacity-100'), 50);
+            } else {
+                mobileDrawer.classList.add('translate-x-full');
+                drawerOverlay.classList.remove('opacity-100');
+                setTimeout(() => drawerOverlay.classList.add('hidden'), 300);
+            }
+        }
+
+        mobileMenuBtn.addEventListener('click', () => toggleDrawer(true));
+        closeDrawerBtn.addEventListener('click', () => toggleDrawer(false));
+        drawerOverlay.addEventListener('click', () => toggleDrawer(false));
+        document.querySelectorAll('.mobile-nav-item').forEach(item => {
+            item.addEventListener('click', () => toggleDrawer(false));
+        });
 
         // Custom toast notice system
         function showNotification(msg, isSuccess = true) {
@@ -390,6 +630,7 @@
             }, 3000);
         }
 
+        // Tension Switch Button Event Listener
         const tensionToggleBtn = document.getElementById('tension-toggle');
         tensionToggleBtn.addEventListener('click', toggleTensionMode);
 
@@ -401,10 +642,11 @@
         function triggerTensionEffect() {
             activeTensionMode = true;
             applyTensionTheme();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Automatically guide user to interactive about page to feel the difference
+            window.location.hash = '#/about';
         }
 
-        // Apply Tension Mode Theme
+        // Apply Tension Mode Theme globally across all simulated pages
         function applyTensionTheme() {
             const toggleText = document.getElementById('toggle-label-text');
             const navLogoText = document.getElementById('nav-logo-text');
@@ -414,13 +656,13 @@
             const heroTensionBtnTxt = document.getElementById('hero-tension-btn-txt');
             const toggleIcon = document.getElementById('toggle-icon');
             const navBadge = document.getElementById('nav-badge');
-            const heroSec = document.getElementById('hero-sec');
+            const heroSec = document.getElementById('page-home');
             
             if (activeTensionMode) {
-                // 단 하나의 색상 #599468 에 어울리도록 연한 톤은 메인 그린의 극소량 오파시티만 할당
-                document.body.style.backgroundColor = 'rgba(89, 148, 104, 0.03)'; 
+                // Energetic Lively Mode
+                document.body.style.backgroundColor = 'rgba(89, 148, 104, 0.04)'; 
                 document.body.classList.add('tension-wave');
-                heroSec.className = "min-h-screen flex flex-col justify-center items-center relative pt-16 px-6 overflow-hidden bg-mainGreen/[0.04]";
+                heroSec.className = "page min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center relative px-6 overflow-hidden bg-mainGreen/[0.04] active";
                 
                 toggleText.innerText = "스위치 끄기";
                 toggleIcon.className = "fa-solid fa-bolt text-white text-sm animate-bounce";
@@ -438,11 +680,12 @@
                 heroTensionBtnTxt.innerText = "스위치 끄기";
                 
                 createSparkleParticles();
-                showNotification("스위치가 켜졌습니다! 활력 가득한 아라를 만나보세요.");
+                showNotification("스위치가 켜졌습니다! 아라님의 활기찬 에너지를 경험해보세요.");
             } else {
+                // Gentle Calm Mode
                 document.body.style.backgroundColor = '#ffffff';
                 document.body.classList.remove('tension-wave');
-                heroSec.className = "min-h-screen flex flex-col justify-center items-center relative pt-16 px-6 overflow-hidden bg-white";
+                heroSec.className = "page min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center relative px-6 overflow-hidden bg-white active";
                 
                 toggleText.innerText = "스위치 켜기";
                 toggleIcon.className = "fa-solid fa-face-smile text-mainGreen text-sm animate-pulse";
@@ -459,7 +702,7 @@
                 heroSubtitle.innerText = "천천히 알아갈수록 더 깊어지는 사람";
                 heroTensionBtnTxt.innerText = "스위치 켜기";
                 
-                showNotification("은은하고 다정한 차분함 모드로 돌아왔습니다.");
+                showNotification("은은하고 다정한 차분함 모드로 복귀했습니다.");
             }
         }
 
@@ -468,7 +711,7 @@
             for (let i = 0; i < 15; i++) {
                 const particle = document.createElement('div');
                 particle.className = 'absolute text-xl pointer-events-none animate-bounce z-50';
-                particle.innerHTML = ['🌿', '💚', '✨', '🏸'][Math.floor(Math.random() * 4)];
+                particle.innerHTML = ['🌿', '💚', '✨', '🏸', '⚡️'][Math.floor(Math.random() * 5)];
                 particle.style.left = Math.random() * 100 + 'vw';
                 particle.style.top = Math.random() * 80 + 10 + 'vh';
                 particle.style.animationDuration = (Math.random() * 2 + 1) + 's';
@@ -480,19 +723,32 @@
             }
         }
 
-        // Squash game logic
+        // Advanced Squash Game Logic
         function hitSquashBall() {
             const ball = document.getElementById('squash-ball');
+            const racket = document.getElementById('squash-racket');
             const speedHud = document.getElementById('current-speed');
             const rallyHud = document.getElementById('rally-count');
             
-            const speed = Math.floor(Math.random() * 80) + 100; // Speed 100 to 180 km/h
+            // Random Speed dynamic (faster if in high tension mode)
+            const multiplier = activeTensionMode ? 1.4 : 1.0;
+            const speed = Math.floor((Math.random() * 80 + 100) * multiplier);
             squashRallies += 1;
             
-            ball.style.transform = `translateX(280px) scale(0.8)`;
+            // Smash Animation Sequence
+            ball.style.transition = 'all 0.1s ease-in-out';
+            racket.style.transform = 'rotate(-45deg) scale(1.2)';
             
+            // Smash forward (Move to front wall)
             setTimeout(() => {
-                ball.style.transform = `translateX(0px) scale(1.1)`;
+                ball.style.transform = `translate(150px, -60px) scale(0.6)`;
+            }, 50);
+            
+            // Rebound backward (Return to player)
+            setTimeout(() => {
+                ball.style.transition = 'all 0.25s ease-out';
+                ball.style.transform = `translate(0px, 0px) scale(1.1)`;
+                racket.style.transform = 'rotate(-12deg) scale(1)';
             }, 150);
             
             speedHud.innerText = speed;
@@ -502,17 +758,19 @@
                 maxSquashSpeed = speed;
                 localStorage.setItem('squash_max', maxSquashSpeed);
                 document.getElementById('squash-max-speed').innerText = maxSquashSpeed;
-                showNotification(`⚡️ 와우! 새로운 스매싱 기록 돌파: ${speed} km/h!`);
+                showNotification(`⚡️ 레코드 갱신! 신기록 달성: ${speed} km/h!`);
+            } else {
+                showNotification(`🎯 굿 스매시! 랠리 진행 중...`);
             }
         }
 
-        // Sashimi Data List
+        // Sashimi Recommendation Data List
         const sashimiList = [
-            { emoji: "🍣", name: "참치", desc: "뜨거운 물로 껍질을 살짝 데쳐 쫄깃하고 고급스러운 식감과 고소함이 일품!", stars: 5 },
-            { emoji: "🐟", name: "광어 지느러미(엔가와)", desc: "씹을수록 뿜어져 나오는 극상의 기름진 고소함과 탱글함의 끝판왕", stars: 5 },
-            { emoji: "💚", name: "두툼한 생 연어회", desc: "입 안에 넣는 순간 부드럽게 녹아내리는 극강의 녹진함과 풍부한 풍미", stars: 4 },
-            { emoji: "❄️", name: "대방어 뱃살", desc: "사각사각 씹히는 고소한 참치 뺨치는 기름기가 폭발하는 겨울 최고의 미식", stars: 5 },
-            { emoji: "✨", name: "우럭 & 묵은지 한 점", desc: "단단하고 쫄깃한 식감의 대명사 우럭, 아삭한 씻은 묵은지와 미친 궁합", stars: 4 }
+            { emoji: "🍣", name: "줄전갱이회", desc: "여름의 방어라고 불리며 지금이 제철이라고합니다!!!!", stars: 5 },
+            { emoji: "🐟", name: "광어 지느러미(엔가와)", desc: "씹을수록 입안 가득 터지는 깊은 기름기와 고소함, 오독거리는 최고의 특수 부위", stars: 5 },
+            { emoji: "💚", name: "두툼한 생 연어회", desc: "넣는 순간 사르르 녹아버리는 극한의 녹진한 부드러움과 환상적인 마블링", stars: 4 },
+            { emoji: "❄️", name: "겨울철 기름진 대방어 뱃살", desc: "마치 참치 뱃살을 연상케 하는 기름기와 사각사각 거리는 풍미 가득한 궁극의 횟감", stars: 5 },
+            { emoji: "✨", name: "우럭", desc: "쫀득하고 찰진 식감의 끝판왕 우럭과 아삭하고 깨끗한 씻은 묵은지의 완벽하고 깔끔한 콜라보", stars: 4 }
         ];
 
         let currentSashimiIdx = 0;
@@ -531,17 +789,81 @@
             const chosen = sashimiList[currentSashimiIdx];
             
             const emojiEl = document.getElementById('sashimi-emoji');
-            emojiEl.classList.add('animate-bounce');
-            setTimeout(() => emojiEl.classList.remove('animate-bounce'), 1000);
+            emojiEl.classList.add('scale-150', 'rotate-[360deg]');
+            setTimeout(() => {
+                emojiEl.classList.remove('scale-150', 'rotate-[360deg]');
+            }, 600);
             
             updateSashimiDOM(chosen);
-            showNotification(`😋 아라 추천 메뉴: [${chosen.name}] 한 점 어떠세요?`);
+            showNotification(`😋 아라 추천 맛집 메뉴: ${chosen.name}!`);
         }
 
         function updateSashimiDOM(item) {
             document.getElementById('sashimi-emoji').innerText = item.emoji;
             document.getElementById('sashimi-name').innerText = item.name;
             document.getElementById('sashimi-desc').innerText = item.desc;
+        }
+
+        // Interactive Vibe Matcher Logic (Page 2)
+        function matchVibe(selection) {
+            const resultBox = document.getElementById('vibe-result');
+            let text = "";
+            let percent = 0;
+
+            if (selection === 'E') {
+                percent = activeTensionMode ? 100 : 70;
+                text = `아라님의 활기찬 친화력 성향과 ${percent}% 일치합니다!`;
+            } else if (selection === 'I') {
+                percent = activeTensionMode ? 50 : 95;
+                text = `아라님의 차분하고 은은한 낯가림 성향과 ${percent}% 일치합니다!`;
+            } else if (selection === 'board') {
+                text = "⚡️ '할리갈리'를 선택하셨군요! 스피드 경쟁 준비 완료! (케미 100%)";
+            } else if (selection === 'sashimi') {
+                text = "🍣 미식의 고수! 오늘 밤 당장 추천 회 한 점 예약입니다!";
+            }
+
+            resultBox.innerText = text;
+            resultBox.classList.add('scale-105', 'text-mainGreen');
+            setTimeout(() => {
+                resultBox.classList.remove('scale-105');
+            }, 200);
+        }
+
+        // Interactive Swift Playground Logic (Page 4)
+        function runSwiftCode(type) {
+            const output = document.getElementById('terminal-output');
+            output.innerHTML = `<span class="animate-pulse text-stone-500">실행 중(Running)...</span>`;
+            
+            setTimeout(() => {
+                if (type === 'profile') {
+                    output.innerHTML = `
+<span class="text-emerald-400">Stdout:</span>
+{
+  "name": "고아라",
+  "birthYear": 2001,
+  "major": "소프트웨어융합전공 (Software Convergence)",
+  "mbti": "ESFP"
+}
+                    `.trim();
+                    showNotification("Swift 코드가 성공적으로 빌드되었습니다.", true);
+                } else if (type === 'motto') {
+                    output.innerHTML = `
+<span class="text-emerald-400">Stdout:</span>
+"불필요한 공정은 줄이고, 
+ 핵심 목적에 정직하며, 
+ 약속된 스케줄은 컴파일 에러 없이 반드시 완수한다."
+                    `.trim();
+                    showNotification("아라의 개발 모토 출력 완료", true);
+                } else if (type === 'stack') {
+                    output.innerHTML = `
+<span class="text-emerald-400">Stdout:</span>
+• Swift / iOS <span class="text-mainGreen">[■■■■■■■■□□] 80%</span>
+• Android <span class="text-mainGreen">[■■■■■□□□□□] 50%</span>
+• Git / Figma <span class="text-mainGreen">[■■■■■■■■■□] 90%</span>
+                    `.trim();
+                    showNotification("기술 스택 프로파일이 반환되었습니다.", true);
+                }
+            }, 450);
         }
     </script>
 </body>
